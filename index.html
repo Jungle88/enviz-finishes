@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enviz — Schedule of Finishes</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    .app-header {
+      background: #1a1a1a;
+      color: white;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .app-header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .app-header .subtitle {
+      font-size: 13px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    .btn-secondary {
+      background: #e5e5e5;
+      color: #333;
+    }
+    .btn-secondary:hover { background: #d4d4d4; }
+
+    .btn-danger {
+      background: transparent;
+      color: #999;
+      font-size: 12px;
+      padding: 4px 8px;
+    }
+    .btn-danger:hover { color: #ef4444; }
+
+    /* Project Info */
+    .project-info {
+      max-width: 900px;
+      margin: 30px auto 0;
+      padding: 0 20px;
+    }
+
+    .project-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .project-fields label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .project-fields input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+    }
+    .project-fields input:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+
+    /* Workspace */
+    .workspace {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+
+    .add-section {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      align-items: center;
+    }
+
+    .category-select {
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+      flex: 1;
+      max-width: 250px;
+    }
+
+    .custom-label {
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+      flex: 1;
+      max-width: 250px;
+    }
+
+    /* Finish Items */
+    .finish-item {
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: box-shadow 0.15s;
+    }
+    .finish-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .finish-item .drag-handle {
+      cursor: grab;
+      color: #ccc;
+      font-size: 18px;
+      user-select: none;
+    }
+
+    .finish-label {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      min-width: 140px;
+    }
+
+    .finish-label input {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 4px 8px;
+      border-radius: 4px;
+      width: 100%;
+      font-family: inherit;
+    }
+    .finish-label input:hover { border-color: #ddd; }
+    .finish-label input:focus { outline: none; border-color: #2563eb; background: #f8f8f8; }
+
+    .swatch-area {
+      width: 120px;
+      height: 120px;
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+    .swatch-area:hover { border-color: #2563eb; }
+    .swatch-area.has-image { border-style: solid; border-color: #e5e5e5; }
+
+    .swatch-area img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .swatch-placeholder {
+      text-align: center;
+      color: #bbb;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .swatch-placeholder .icon {
+      font-size: 24px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .finish-details {
+      flex: 1;
+    }
+
+    .finish-details input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #eee;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      margin-bottom: 8px;
+    }
+    .finish-details input:focus { outline: none; border-color: #2563eb; }
+    .finish-details input::placeholder { color: #bbb; }
+
+    .finish-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; }
+
+    /* Export Board (hidden, rendered for PNG) */
+    #export-board {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      width: 1200px;
+      background: white;
+      padding: 60px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #export-board .export-header {
+      border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 20px;
+      margin-bottom: 40px;
+    }
+
+    #export-board .export-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    #export-board .export-subtitle {
+      font-size: 14px;
+      color: #666;
+    }
+
+    #export-board .export-meta {
+      display: flex;
+      gap: 40px;
+      margin-top: 12px;
+    }
+
+    #export-board .export-meta span {
+      font-size: 13px;
+      color: #888;
+    }
+
+    #export-board .export-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    #export-board .export-item {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 16px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+    }
+
+    #export-board .export-item-image {
+      width: 100px;
+      height: 100px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    #export-board .export-item-info {
+      flex: 1;
+    }
+
+    #export-board .export-item-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #2563eb;
+      margin-bottom: 6px;
+    }
+
+    #export-board .export-item-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    #export-board .export-item-detail {
+      font-size: 13px;
+      color: #888;
+    }
+
+    #export-board .export-footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+      text-align: right;
+      font-size: 12px;
+      color: #ccc;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .finish-item { flex-wrap: wrap; }
+      .finish-label { min-width: 100%; }
+      .project-fields { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-header">
+    <div>
+      <h1>ENVIZ</h1>
+      <div class="subtitle">Schedule of Finishes</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+      <button class="btn btn-primary" onclick="exportPNG()">Export PNG</button>
+    </div>
+  </div>
+
+  <div class="project-info">
+    <div class="project-fields">
+      <div>
+        <label>Project Name</label>
+        <input type="text" id="projectName" placeholder="e.g. Halcyon Bondi">
+      </div>
+      <div>
+        <label>Client / Developer</label>
+        <input type="text" id="clientName" placeholder="e.g. Eterno Property Group">
+      </div>
+      <div>
+        <label>Date</label>
+        <input type="text" id="projectDate" placeholder="e.g. February 2026">
+      </div>
+      <div>
+        <label>Prepared By</label>
+        <input type="text" id="preparedBy" placeholder="e.g. Interior Design Team">
+      </div>
+    </div>
+  </div>
+
+  <div class="workspace">
+    <div class="add-section">
+      <select class="category-select" id="categorySelect">
+        <option value="">Select finish type...</option>
+        <option value="FLOORING">Flooring</option>
+        <option value="WALL FINISH">Wall Finish</option>
+        <option value="CEILING">Ceiling</option>
+        <option value="COUNTERTOP">Countertop</option>
+        <option value="SPLASHBACK">Splashback</option>
+        <option value="CABINETRY">Cabinetry</option>
+        <option value="HARDWARE">Hardware</option>
+        <option value="TAPWARE">Tapware</option>
+        <option value="BATHROOM TILE">Bathroom Tile</option>
+        <option value="FEATURE WALL">Feature Wall</option>
+        <option value="WINDOW TREATMENT">Window Treatment</option>
+        <option value="DOOR FINISH">Door Finish</option>
+        <option value="LIGHTING">Lighting</option>
+        <option value="EXTERIOR CLADDING">Exterior Cladding</option>
+        <option value="BALCONY TILE">Balcony Tile</option>
+        <option value="CUSTOM">Custom...</option>
+      </select>
+      <input type="text" class="custom-label" id="customLabel" placeholder="Custom label..." style="display:none">
+      <button class="btn btn-primary" onclick="addFinish()">+ Add Finish</button>
+    </div>
+
+    <div id="finishList"></div>
+
+    <div id="emptyState" class="empty-state">
+      <div class="icon">🎨</div>
+      <p>Add finishes above to build your schedule</p>
+    </div>
+  </div>
+
+  <div id="export-board"></div>
+
+  <script>
+    let finishes = [];
+    let nextId = 1;
+
+    const categorySelect = document.getElementById('categorySelect');
+    const customLabel = document.getElementById('customLabel');
+
+    categorySelect.addEventListener('change', () => {
+      customLabel.style.display = categorySelect.value === 'CUSTOM' ? 'block' : 'none';
+    });
+
+    function addFinish() {
+      let label = categorySelect.value;
+      if (!label) { alert('Select a finish type first'); return; }
+      if (label === 'CUSTOM') {
+        label = customLabel.value.trim().toUpperCase();
+        if (!label) { alert('Enter a custom label'); return; }
+        customLabel.value = '';
+      }
+      categorySelect.value = '';
+      customLabel.style.display = 'none';
+
+      finishes.push({
+        id: nextId++,
+        label: label,
+        image: null,
+        productName: '',
+        detail: ''
+      });
+      render();
+    }
+
+    function removeFinish(id) {
+      finishes = finishes.filter(f => f.id !== id);
+      render();
+    }
+
+    function updateFinish(id, field, value) {
+      const f = finishes.find(f => f.id === id);
+      if (f) f[field] = value;
+    }
+
+    function triggerUpload(id) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const f = finishes.find(f => f.id === id);
+          if (f) {
+            f.image = ev.target.result;
+            render();
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    }
+
+    function render() {
+      const list = document.getElementById('finishList');
+      const empty = document.getElementById('emptyState');
+      
+      if (finishes.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      list.innerHTML = finishes.map(f => `
+        <div class="finish-item" data-id="${f.id}">
+          <div class="finish-label">
+            <input type="text" value="${f.label}" 
+              onchange="updateFinish(${f.id}, 'label', this.value.toUpperCase())"
+              onfocus="this.select()">
+          </div>
+          <div class="swatch-area ${f.image ? 'has-image' : ''}" onclick="triggerUpload(${f.id})">
+            ${f.image 
+              ? `<img src="${f.image}" alt="${f.label}">` 
+              : `<div class="swatch-placeholder"><span class="icon">+</span>Upload<br>image</div>`
+            }
+          </div>
+          <div class="finish-details">
+            <input type="text" placeholder="Product name / description" 
+              value="${f.productName || ''}"
+              onchange="updateFinish(${f.id}, 'productName', this.value)">
+            <input type="text" placeholder="Supplier, colour code, notes..." 
+              value="${f.detail || ''}"
+              onchange="updateFinish(${f.id}, 'detail', this.value)">
+          </div>
+          <div class="finish-actions">
+            <button class="btn btn-danger" onclick="removeFinish(${f.id})">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function clearAll() {
+      if (finishes.length === 0) return;
+      if (!confirm('Clear all finishes?')) return;
+      finishes = [];
+      render();
+    }
+
+    async function exportPNG() {
+      const items = finishes.filter(f => f.image);
+      if (items.length === 0) {
+        alert('Add at least one finish with an image to export');
+        return;
+      }
+
+      const board = document.getElementById('export-board');
+      const projectName = document.getElementById('projectName').value || 'Untitled Project';
+      const clientName = document.getElementById('clientName').value || '';
+      const projectDate = document.getElementById('projectDate').value || '';
+      const preparedBy = document.getElementById('preparedBy').value || '';
+
+      board.innerHTML = `
+        <div class="export-header">
+          <div class="export-title">${projectName}</div>
+          <div class="export-subtitle">Schedule of Finishes</div>
+          <div class="export-meta">
+            ${clientName ? `<span>${clientName}</span>` : ''}
+            ${projectDate ? `<span>${projectDate}</span>` : ''}
+            ${preparedBy ? `<span>Prepared by: ${preparedBy}</span>` : ''}
+          </div>
+        </div>
+        <div class="export-grid">
+          ${items.map(f => `
+            <div class="export-item">
+              <img class="export-item-image" src="${f.image}" alt="${f.label}">
+              <div class="export-item-info">
+                <div class="export-item-label">${f.label}</div>
+                <div class="export-item-name">${f.productName || ''}</div>
+                <div class="export-item-detail">${f.detail || ''}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="export-footer">Generated with Enviz</div>
+      `;
+
+      // Wait for images to load
+      const imgs = board.querySelectorAll('img');
+      await Promise.all([...imgs].map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(r => { img.onload = r; img.onerror = r; });
+      }));
+
+      try {
+        const canvas = await html2canvas(board, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+
+        const link = document.createElement('a');
+        link.download = `${projectName.replace(/[^a-zA-Z0-9]/g, '-')}-finishes.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } catch (err) {
+        alert('Export failed: ' + err.message);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
